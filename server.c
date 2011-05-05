@@ -107,6 +107,8 @@ void handle_session(int client) {
         if (!running) break;
     }
     info("[ SESSION %d ]: exit session", getpid());
+    int st = close(client);
+    info("[ SESSION %d ]: closed , status %d", getpid(), st);
 }
 
 int main(int argc, char *argv[]){
