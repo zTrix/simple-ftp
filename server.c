@@ -35,6 +35,18 @@ void ouch(int n) {
     exit(0);
 }
 
+enum FTP_CMD parse_cmd(char *buf, int len) {
+    int i,j;
+    for (i=0; i<FTP_CMD_COUNT; i++) {
+        for (j=0; FTP_CMD_LIST[i].name[j] != '\0' && j < len; j++) {
+            if (FTP_CMD_LIST[i].name[j] != buf[j]) break;
+        }
+        if (FTP_CMD_LIST[i].name[j] == '\0')
+            return FTP_CMD_LIST[i].cmd;
+    }
+    return INVALID;
+}
+
 /**
  * handle a newly accepted ftp session
  *
@@ -42,10 +54,25 @@ void ouch(int n) {
 void handle_session(int client) {
     struct sockaddr_in addr;
     uint32_t addrlen = sizeof(addr);
-    getsockname(client, (struct sockaddr*)&addr, &addrlen);
-    info("Server Address: %s", inet_ntoa(addr.sin_addr));
-    while (running) {
-        
+    //getsockname(client, (struct sockaddr*)&addr, &addrlen);
+    //info("Server Address: %s", inet_ntoa(addr.sin_addr));
+    send_str(client, FTP_RDY);
+    int i, n;
+    while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
+        if (!running) break;
+        buf[n] = '\0';
+        info("pid %d, recved: %s", pid, buf);
+        for (i=0; i<n; i++) {
+            if (buf[i] == '\n') break;
+        }
+        if (buf[i] != '\n') {
+            err("no line break found");
+            break;
+        }
+        n = recv(client, buf, i+1, 0);
+        buf[n] = '\0';
+        enum FTP_CMD cmd = parse_cmd(buf, n);
+        info("cmd %d", cmd);
     }
     info("exit handle_session");
 }
