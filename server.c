@@ -25,11 +25,11 @@ void ouch(int n) {
     running = 0;
     puts("");
     if (server >= 0) {
-        int st = close_socket(server);
+        int st = close(server);
         info("pid: %d, shutdown server ... %d", pid, st);
     }
     if (client >= 0) {
-        int st = close_socket(client);
+        int st = close(client);
         info("pid: %d, shutdown client ... %d", pid, st);
     }
     exit(0);

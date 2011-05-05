@@ -20,16 +20,3 @@ int new_server(uint32_t inaddr, uint16_t port, int backlog) {
     return server;
 }
 
-/**
-  *  close socket
-  * 
-  * @param {int} socket
-  * @return {int}  status, 1 means invalid socket, 0 means success, < 0 means error
-  */
-int close_socket(int socket) {
-    if (socket < 0) {
-        return 0;
-    }
-    return close(socket);
-}
-
