@@ -61,10 +61,11 @@ void handle_session(int client) {
     //info("Server Address: %s", inet_ntoa(addr.sin_addr));
     send_str(client, FTP_RDY);
     int i, n;
+    char cwd[BUF_SIZE] = {0};
     while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
         if (!running) break;
         buf[n] = '\0';
-        info("[ SESSION %d ]: recved %d bytes: %s", getpid(), n, buf);
+        //info("[ SESSION %d ]: recved %d bytes: %s", getpid(), n, buf);
         for (i=0; i<n; i++) {
             if (buf[i] == '\n') break;
         }
@@ -75,12 +76,35 @@ void handle_session(int client) {
         n = recv(client, buf, i+1, 0);
         buf[n] = '\0';
         enum FTP_CMD cmd = parse_cmd(buf, n);
+        if (cmd < 0) {
+            buf[n-2] = 0;
+            info("[ SESSION %d ]: unknown cmd: %s", getpid(), buf);
+            continue;
+        }
         info("[ SESSION %d ]: cmd: %s, %d", getpid(), FTP_CMD_LIST[cmd].name, cmd);
         switch(cmd) {
             case NOOP:
                 send_str(client, FTP_OK);
-            break;
+                break;
+            case QUIT:
+                send_str(client, FTP_QUIT);
+                running = 0;
+                break;
+            case HELP:
+                send_str(client, FTP_HELP);
+                break;
+            case USER:
+                send_str(client, FTP_NAMEOK);
+                break;
+            case PASS:
+                send_str(client, FTP_LOGIN);
+                break;
+            case PWD:
+                getcwd(cwd, sizeof(cwd));
+                send_str(client, FTP_PWD, cwd);
+                break;
         }
+        if (!running) break;
     }
     info("[ SESSION %d ]: exit session", getpid());
 }

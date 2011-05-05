@@ -69,7 +69,7 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define RPL_DELE 250
 #define RPL_PWD 257
 #define RPL_MKDIR 257
-#define RPL_LOGGEDIN 230
+#define RPL_LOGIN 230
 #define RPL_RESTOK 350
 #define RPL_RNFR 350
 #define RPL_ERRUNKWN 500
@@ -79,8 +79,13 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define RPL_BADSEQ 503
 #define RPL_ERRNOTIMPLPARM 504
 
-#define W(s,d) "%d "#s" \r\n",d
-#define FTP_OK W(OK,RPL_OK)
-#define FTP_RDY W(Welcome to zTrix FTP, RPL_RDY)
+#define W(s,d) "%d "s" \r\n",d
+#define FTP_OK W("OK",RPL_OK)
+#define FTP_RDY W("Welcome to zTrix FTP", RPL_RDY)
+#define FTP_QUIT W("Welcome back", RPL_QUIT)
+#define FTP_HELP W("Help msg", RPL_OK)
+#define FTP_NAMEOK W("User name okay need password", RPL_NAMEOK)
+#define FTP_LOGIN W("User logged in proceed", RPL_LOGIN)
+#define FTP_PWD W("\"%s\" is cwd", RPL_PWD)
 
 #endif
