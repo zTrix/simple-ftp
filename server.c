@@ -64,21 +64,22 @@ void handle_session(int client) {
     while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
         if (!running) break;
         buf[n] = '\0';
-        info("[ SESSION %d] recved: %s", getpid(), buf);
+        info("[ SESSION %d ]: recved %d bytes: %s", getpid(), n, buf);
         for (i=0; i<n; i++) {
             if (buf[i] == '\n') break;
         }
         if (buf[i] != '\n') {
-            err("no line break found");
+            err("[ SESSION %d ]: no line break found", getpid());
             break;
         }
         n = recv(client, buf, i+1, 0);
         buf[n] = '\0';
         enum FTP_CMD cmd = parse_cmd(buf, n);
-        info("[ SESSION %d ] cmd: %s, %d", FTP_CMD_LIST[cmd].name, cmd);
+        info("[ SESSION %d ]: cmd: %s, %d", getpid(), FTP_CMD_LIST[cmd].name, cmd);
         switch(cmd) {
             case NOOP:
                 send_str(client, FTP_OK);
+            break;
         }
     }
     info("[ SESSION %d ]: exit session", getpid());

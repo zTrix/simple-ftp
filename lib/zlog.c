@@ -2,7 +2,7 @@
 #include <stdarg.h>
 
 void err(char *fmt, ...) {
-    printf(" [ EE ]  ");
+    printf(" [ EE ] ");
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -11,7 +11,7 @@ void err(char *fmt, ...) {
 }
 
 void warn(char *fmt, ...) {
-    printf(" [ WW ]  ");
+    printf(" [ WW ] ");
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -20,7 +20,7 @@ void warn(char *fmt, ...) {
 }
 
 void info(char *fmt, ...) {
-    printf(" [ II ]  ");
+    printf(" [ II ] ");
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);

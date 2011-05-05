@@ -22,11 +22,11 @@ struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT] = {
     {"SITE", SITE},
     {"STAT", STAT},
     {"HELP", HELP},
+    {"NOOP", NOOP},
     {"TYPE", TYPE},
     {"PASV", PASV},
     {"PORT", PORT},
     {"SYST", SYST},
-    {"NOOP", NOOP},
     {"QUIT", QUIT},
     {"MDTM", MDTM},
     {"SIZE", SIZE}
