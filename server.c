@@ -11,7 +11,7 @@
 #include "mysocket.h"
 
 int server = -1, client = -1, running = 0;
-pid_t pid = 1;
+pid_t forkpid = 1;
 char buf[BUF_SIZE];
 
 /**
@@ -24,13 +24,16 @@ char buf[BUF_SIZE];
 void ouch(int n) {
     running = 0;
     puts("");
-    if (server >= 0) {
-        int st = close(server);
-        info("pid: %d, shutdown server ... %d", pid, st);
-    }
-    if (client >= 0) {
-        int st = close(client);
-        info("pid: %d, shutdown client ... %d", pid, st);
+    if (forkpid > 0) {      // ftpd
+        if (server >= 0) {
+            int st = close(server);
+            info("[ DAEMON ]: pid %d, shutdown ftp ... %d", getpid(), st);
+        }
+    } else {                // session
+        if (client >= 0) {
+            int st = close(client);
+            info("[ SESSION %d ]: shutdown ftp session... %d", getpid(), st);
+        }
     }
     exit(0);
 }
@@ -61,7 +64,7 @@ void handle_session(int client) {
     while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
         if (!running) break;
         buf[n] = '\0';
-        info("pid %d, recved: %s", pid, buf);
+        info("[ SESSION %d] recved: %s", getpid(), buf);
         for (i=0; i<n; i++) {
             if (buf[i] == '\n') break;
         }
@@ -72,9 +75,13 @@ void handle_session(int client) {
         n = recv(client, buf, i+1, 0);
         buf[n] = '\0';
         enum FTP_CMD cmd = parse_cmd(buf, n);
-        info("cmd %d", cmd);
+        info("[ SESSION %d ] cmd: %s, %d", FTP_CMD_LIST[cmd].name, cmd);
+        switch(cmd) {
+            case NOOP:
+                send_str(client, FTP_OK);
+        }
     }
-    info("exit handle_session");
+    info("[ SESSION %d ]: exit session", getpid());
 }
 
 int main(int argc, char *argv[]){
@@ -89,7 +96,7 @@ int main(int argc, char *argv[]){
 
     server = new_server(LISTEN_ADDR, port, MAX_CONNECTIONS);
     if (server < 0) {
-        err("can not create server, return code is %d", server);
+        err("[ DAEMON ] can not create server, return code is %d, socket already in use", server);
         exit(1);
     }
 
@@ -107,15 +114,15 @@ int main(int argc, char *argv[]){
         }
         info("client connected: %s", inet_ntoa(client_addr.sin_addr));
 
-        pid = fork();
-        if (pid == -1) {
+        forkpid = fork();
+        if (forkpid == -1) {
             err("fork server error");
-        } else if (pid == 0) {      // child
+        } else if (forkpid == 0) {      // child
             server = -1;        // avoid killing server on Ctrl-C
             info("new ftp session");
             handle_session(client);
             exit(0);
-        } else if (pid > 0) {       // myself
+        } else if (forkpid > 0) {       // myself
             client = -1;
         }
     }

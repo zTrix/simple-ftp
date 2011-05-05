@@ -11,6 +11,7 @@
 #define MAX_CONNECTIONS 5
 
 enum FTP_CMD {
+    INVALID = -1,
     USER,
     PASS,
     RETR,
@@ -41,7 +42,6 @@ enum FTP_CMD {
     MDTM,
     SIZE,
     FTP_CMD_COUNT,
-    INVALID
 };
 
 struct ftp_cmd {
@@ -49,37 +49,7 @@ struct ftp_cmd {
     enum FTP_CMD cmd;
 };
 
-struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT] = {
-    {"USER", USER},
-    {"PASS", PASS},
-    {"RETR", RETR},
-    {"STOR", STOR},
-    {"STOU", STOU},
-    {"APPE", APPE},
-    {"REST", REST},
-    {"RNFR", RNFR},
-    {"RNTO", RNTO},
-    {"ABOR", ABOR},
-    {"DELE", DELE},
-    {"RMD" , RMD },
-    {"MKD" , MKD },
-    {"PWD" , PWD },
-    {"CWD" , CWD },
-    {"CDUP", CDUP},
-    {"LIST", LIST},
-    {"NLST", NLST},
-    {"SITE", SITE},
-    {"STAT", STAT},
-    {"HELP", HELP},
-    {"TYPE", TYPE},
-    {"PASV", PASV},
-    {"PORT", PORT},
-    {"SYST", SYST},
-    {"NOOP", NOOP},
-    {"QUIT", QUIT},
-    {"MDTM", MDTM},
-    {"SIZE", SIZE}
-};
+extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 
 #define RPL_RESTART 110
 #define RPL_WAITRDY 120
