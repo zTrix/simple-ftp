@@ -60,7 +60,7 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define RPL_SYST 215
 #define RPL_RDY 220
 #define RPL_QUIT 221
-#define RPL_TRSFOK226
+#define RPL_TRSFOK 226
 #define RPL_PASVOK 227
 #define RPL_NAMEOK 331
 #define RPL_CWD 250
@@ -72,10 +72,10 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define RPL_LOGIN 230
 #define RPL_RESTOK 350
 #define RPL_RNFR 350
-#define RPL_ERRUNKWN 500
-#define RPL_ERRPARM 501
-#define RPL_ERRIGN 202
-#define RPL_ERRNOTIMPL 502
+#define RPL_ERR_UNKWNCMD 500
+#define RPL_ERR_PARM 501
+#define RPL_ERR_IGN 202
+#define RPL_ERR_NOTIMPL 502
 #define RPL_BADSEQ 503
 #define RPL_ERRNOTIMPLPARM 504
 
@@ -87,5 +87,25 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define FTP_NAMEOK W("User name okay need password", RPL_NAMEOK)
 #define FTP_LOGIN W("User logged in proceed", RPL_LOGIN)
 #define FTP_PWD W("\"%s\" is cwd", RPL_PWD)
+#define FTP_SYST W("UNIX", RPL_SYST)
+#define FTP_CTYPE W("data type changed to %c", RPL_OK)
+#define FTP_ERR_DATATYPE W("error type change cmd, current data type is %c", RPL_ERR_UNKWNCMD)
+#define FTP_PASV W("Enter passive mode (%d,%d,%d,%d,%d,%d)", RPL_PASVOK)
+#define FTP_PORT W("PORT command success", RPL_OK)
+#define FTP_ERR_PORT W("port command failed, parameter error", RPL_ERR_PARM)
+
+enum DATA_TYPE {
+    TYPE_ASCII,
+    TYPE_EBDIC,
+    TYPE_IMAGE,
+    TYPE_LOCAL,
+    TYPE_COUNT
+};
+
+enum TRSF_TYPE {
+    TRSF_PASV,
+    TRSF_PORT,
+    TRSF_COUNT,
+};
 
 #endif

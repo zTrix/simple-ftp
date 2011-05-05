@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "vars.h"
-#include "mysocket.h"
+#include "utils.h"
 
 struct sockaddr new_addr(uint32_t inaddr, unsigned short port) {
     struct sockaddr_in addr;
@@ -21,10 +21,10 @@ int new_server(uint32_t inaddr, uint16_t port, int backlog) {
     server = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr addr = new_addr(inaddr, port);
     if (bind(server, &addr, sizeof(addr)) < 0) {
-        return -1;
+        return -2;
     }
     if (listen(server, backlog) < 0) {
-        return -2;
+        return -3;
     }
     return server;
 }
@@ -97,3 +97,36 @@ int recv_path(int peer, char *file, uint32_t offset) {
     int cl = fclose(f);
     return st < 0 ? st : cl;
 }
+
+int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port) {
+    int i;
+    *addr = *port = 0;
+    int f = -1;
+    char tmp[BUF_SIZE] = {0};
+    int cnt = 0;
+    int portcnt = 0;
+    for(i=0; buf[i]!=0; i++) {
+        if(!isdigit(buf[i])) {
+            if (f>0) {
+                memcpy(tmp, &buf[f], i-f);
+                tmp[i-f] = 0;
+                if (cnt < 4) {
+                    *addr = (*addr << 8) + (0xff & atoi(tmp));
+                    cnt++;
+                } else if (portcnt < 2) {
+                    *port = (*port << 8) + (0xff & atoi(tmp));
+                    portcnt++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            if (f < 0) {
+                f = i;
+            }
+        }
+    }
+    return cnt == 4 && portcnt == 2;
+}
+
+
