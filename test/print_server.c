@@ -43,10 +43,11 @@ int main(int argc, char *argv[]) {
     char buf[1024];
     int n;
     client = accept(server, (struct sockaddr *)&client_addr, &len);
+    printf("[ II ] client accpeted, addr is %s: %hu \n", inet_ntoa(*(struct in_addr *)&client_addr.sin_addr.s_addr), ntohs(client_addr.sin_port));
     while ((n = recv(client, buf, BUF_SIZE, 0)) > 0) {
         buf[n] = 0;
         printf("%s",buf);
     }
-    printf("[ II ] connection closed");
+    printf("[ II ] connection closed\n");
     return 0;
 }

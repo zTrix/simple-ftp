@@ -175,7 +175,6 @@ void handle_session(int client) {
                     send_str(client, FTP_ASCII);
                     info(1, "LIST cmd in PORT mode, try connecting %s %lu", n2a(port_address), port_port);
                     data_client = new_client(port_address, port_port);
-                    info(1, "R");
                     if (data_client < 0) {
                         err(1, "port mode connect client data sock error");
                         break;
