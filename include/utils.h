@@ -15,6 +15,7 @@ int recv_path(int peer, char *file, uint32_t offset);
 
 int parse_number(const char *buf, uint32_t *number);
 int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port);
+char * parse_path(const char *buf);
 char * n2a(uint32_t addr);
 #endif
 

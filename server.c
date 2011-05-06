@@ -160,31 +160,31 @@ void handle_session(int client) {
             case LIST:
                 if (trsf_type == TRSF_PASV) {
                     if (pasv_port > 1024 && pasv_port <= 65535 && pasv_server >= 0) {
-                        send_str(client, FTP_ASCII);
+                        send_str(client, FTP_ASCII, "LIST");
                         data_client = accept(pasv_server, (struct sockaddr *)&data_client_addr, &data_client_len);
                         if (data_client < 0) {
-                            err(1, "accept data client socket error");
+                            err(1, "LIST, accept data client socket error");
                         }
                     } else {
-                        err(1, "no pasv server created");
+                        err(1, "LIST, no pasv server created");
                         break;
                     }
                 } else if (trsf_type == TRSF_PORT) {
                     if (port_address == 0 || port_port == 0) {
-                        err(1, "LIST cmd in PORT mode, address and port not set before");
+                        err(1, "LIST, in PORT mode, address and port not set before");
                         break;
                     }
-                    send_str(client, FTP_ASCII);
-                    info(1, "LIST cmd in PORT mode, try connecting %s %lu", n2a(port_address), port_port);
+                    send_str(client, FTP_ASCII, "LIST");
+                    info(1, "LIST, in PORT mode, try connecting %s %lu", n2a(port_address), port_port);
                     data_client = new_client(port_address, port_port);
                     if (data_client < 0) {
                         err(1, "port mode connect client data sock error");
                         break;
                     } else {
-                        info(1, "LIST cmd in PORT mode, %s %lu connected", n2a(port_address), port_port);
+                        info(1, "LIST, in PORT mode, %s %lu connected", n2a(port_address), port_port);
                     }
                 } else {
-                    err(1, "transfer type no specified");
+                    err(1, "LIST: transfer type no specified");
                 }
                 if (data_client >= 0) {
                     getcwd(cwd, sizeof(cwd));
@@ -192,13 +192,13 @@ void handle_session(int client) {
                     FILE *p = popen(cmdbuf, "r");
                     send_file(data_client, p);
                     pclose(p);
-                    info(1, "data client closed, status %d", close(data_client));
+                    info(1, "LIST , data client closed, status %d", close(data_client));
                     data_client = -1;
                 } else {
-                    err(1, "no data client created");
+                    err(1, "LIST , no data client created");
                 }
                 if (pasv_server >= 0) {
-                    info(1, "LIST cmd, closing passive server ... %d", close(pasv_server));
+                    info(1, "LIST, closing passive server ... %d", close(pasv_server));
                     pasv_server = -1;
                 }
                 break;
@@ -206,10 +206,145 @@ void handle_session(int client) {
                 if (parse_number(buf, &restdata) == 0) {
                     send_str(client, FTP_REST, restdata);
                 } else {
-                    err(1, "rest command error, wrong param");
+                    err(1, "REST, command error, wrong param");
                     send_str(client, FTP_ERR_PARAM, "REST");
                 }
                 break;
+            case RETR:
+                if (trsf_type == TRSF_PASV) {
+                    if (pasv_port > 1024 && pasv_port <= 65535 && pasv_server >= 0) {
+                        if (datatype == TYPE_ASCII) {
+                            send_str(client, FTP_ASCII, "RETR");
+                        } else {
+                            send_str(client, FTP_BIN, "RETR");
+                        }
+                        data_client = accept(pasv_server, (struct sockaddr *)&data_client_addr, &data_client_len);
+                        if (data_client < 0) {
+                            err(1, "accept data client error");
+                            break;
+                        }
+                    } else {
+                        err(1, "RETR, pasv server not ready ");
+                    }
+                } else if (trsf_type == TRSF_PORT) {
+                    if (port_address == 0 || port_port == 0) {
+                        err(1, "RETR, in PORT mode, address and port not set before");
+                        break;
+                    }
+                    if (datatype == TYPE_ASCII) {
+                        send_str(client, FTP_ASCII, "RETR");
+                    } else {
+                        send_str(client, FTP_BIN, "RETR");
+                    }
+                    info(1, "RETR , PORT mode, try connecting %s %lu", n2a(port_address), port_port);
+                    data_client = new_client(port_address, port_port);
+                    if (data_client < 0) {
+                        err(1, "RETR: connect client error ");
+                    }
+                } else {
+                    err(1, "RETR: transfer type no specified");
+                    break;
+                }
+                char * p = parse_path(buf);
+                if (!p) {
+                    err(1, "RETR, wrong param");
+                    send_str(1, FTP_ERR_PARAM, "RETR");
+                    break;
+                } else {
+                    int st = send_path(data_client, p, restdata);
+                    if (st >= 0) {
+                        send_str(client, FTP_TRSF_OK);
+                        restdata = 0;
+                    } else {
+                        send_str(client, FTP_ERROR, st == -1 ? "file not exist" : "unknow error");
+                    }
+                }
+                if (data_client >= 0) {
+                    info(1, "RETR, closing data client ... %d", close(data_client));
+                    data_client = -1;
+                }
+                if (pasv_server >= 0) {
+                    info(1, "RETR, closing passive server ... %d", close(pasv_server));
+                    pasv_server = -1;
+                }
+                break;
+            case STOR:
+                if (trsf_type == TRSF_PASV) {
+                    if (pasv_port > 1024 && pasv_port <= 65535 && pasv_server >= 0) {
+                        if (datatype == TYPE_ASCII) {
+                            send_str(client, FTP_ASCII, "STOR");
+                        } else {
+                            send_str(client, FTP_BIN, "STOR");
+                        }
+                        data_client = accept(pasv_server, (struct sockaddr *)&data_client_addr, &data_client_len);
+                        if (data_client < 0) {
+                            err(1, "STOR, accept data client error");
+                            break;
+                        }
+                    } else {
+                        err(1, "STOR, pasv server not ready ");
+                    }
+                } else if (trsf_type == TRSF_PORT) {
+                    if (port_address == 0 || port_port == 0) {
+                        err(1, "STOR, PORT mode, address and port not set before");
+                        break;
+                    }
+                    if (datatype == TYPE_ASCII) {
+                        send_str(client, FTP_ASCII, "STOR");
+                    } else {
+                        send_str(client, FTP_BIN, "STOR");
+                    }
+                    info(1, "STOR, PORT mode, try connecting %s %lu", n2a(port_address), port_port);
+                    data_client = new_client(port_address, port_port);
+                    if (data_client < 0) {
+                        err(1, "STOR: connect client error ");
+                    }
+                } else {
+                    err(1, "STOR: transfer type no specified");
+                    break;
+                }
+                char * p = parse_path(buf);
+                if (!p) {
+                    err(1, "STOR, wrong param");
+                    send_str(1, FTP_ERR_PARAM, "RETR");
+                    break;
+                } else {
+                    int st = recv_path(data_client, p, restdata);
+                    if (st >= 0) {
+                        send_str(client, FTP_TRSF_OK);
+                        restdata = 0;
+                    } else {
+                        send_str(client, FTP_ERROR, "unknow error");
+                    }
+                }
+                if (data_client >= 0) {
+                    info(1, "STOR, closing data client ... %d", close(data_client));
+                    data_client = -1;
+                }
+                if (pasv_server >= 0) {
+                    info(1, "STOR, closing passive server ... %d", close(pasv_server));
+                    pasv_server = -1;
+                }
+                break;
+            case CDUP:
+                if (!chdir("..")) {
+                    send_str(client, FTP_CDUP);
+                } else {
+                    send_str(client, FTP_ERROR, "change to parent dir failed");
+                }
+                break;
+            case CWD:
+                char *p = parse_path(buf);
+                if (!p) {
+                    err(1, "CWD, wrong param");
+                    send_str(1, FTP_ERR_PARAM, "CWD");
+                    break;
+                }
+                if (!(chdir(p))) {
+                    send_str(client, FTP_CWD);
+                } else {
+                    send_str(client, FTP_ERROR, "change dir failed");
+                }
         }
         if (!running) break;
     }

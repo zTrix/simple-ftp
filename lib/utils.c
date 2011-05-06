@@ -52,6 +52,9 @@ int send_str(int peer, const char* fmt, ...) {
     return send(peer, msgbuf, strlen(msgbuf), 0);
 }
 
+/**
+ * -1 error, 0 ok
+ */
 int send_file(int peer, FILE *f) {
     char filebuf[BUF_SIZE+1];
     int n, ret = 0;
@@ -69,14 +72,22 @@ int send_file(int peer, FILE *f) {
     return ret;
 }
 
+/**
+ *  -1 error opening file, -2 send file error, -3 close file error
+ */
 int send_path(int peer, char *file, uint32_t offset) {
     FILE *f = fopen(file, "rb");
     if (f) {
         fseek(f, offset, SEEK_SET);
-        send_file(peer, f);
+        int st = send_file(peer, f);
+        if (st < 0) {
+            return -2;
+        }
+    } else {
+        return -1;
     }
     int ret = fclose(f);
-    return ret;
+    return ret == 0 ? 0 : -3;
 }
 
 int recv_file(int peer, FILE *f) {
@@ -161,6 +172,17 @@ int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port) {
         }
     }
     return cnt == 4 && portcnt == 2;
+}
+
+char * parse_path(const char *buf) {
+    char * path = (char *)malloc(BUF_SIZE);
+    int i, j;
+    for (i=0; buf[i]!=' ' && i < BUF_SIZE; i++);
+    if (i == BUF_SIZE) return NULL;
+    for (j=i; buf[j]!='\r' && buf[j]!= '\n' && j < BUF_SIZE; j++);
+    memcpy(path, &buf[i], j-i);
+    path[j-i] = 0;
+    return path;
 }
 
 char * n2a(uint32_t addr) {
