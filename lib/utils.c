@@ -130,4 +130,8 @@ int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port) {
     return cnt == 4 && portcnt == 2;
 }
 
+char * n2a(uint32_t addr) {
+    uint32_t t = htonl(addr);
+    return inet_ntoa(*(struct in_addr *)&t);
+}
 

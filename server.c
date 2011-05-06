@@ -57,18 +57,18 @@ enum FTP_CMD parse_cmd(char *buf, int len) {
 void handle_session(int client) {
     send_str(client, FTP_RDY);
     int i, n, retry;
-    char cwd[BUF_SIZE] = {0};
+    char cwd[BUF_SIZE] = {0}, cmdbuf[BUF_SIZE] = {0};
     enum DATA_TYPE datatype = TYPE_IMAGE;
     srand(time(0));
     uint32_t pasv_port;
-    enum TRSF_TYPE trsf_type;
+    enum TRSF_TYPE trsf_type = TRSF_PORT;
     int pasv_server = -1;
     struct sockaddr_in svr_addr;
     int svr_addr_len = sizeof(svr_addr);
     getsockname(client, (struct sockaddr*)&svr_addr, &svr_addr_len);
     uint32_t svr_host_addr = ntohl(svr_addr.sin_addr.s_addr);
-    uint32_t port_address;
-    uint16_t port_port;
+    uint32_t port_address = 0;
+    uint16_t port_port = 0;
     int data_client = -1;
     struct sockaddr_in data_client_addr;
     int data_client_len = sizeof(data_client_addr);
@@ -151,7 +151,7 @@ void handle_session(int client) {
                     err(1, "port cmd error parsing addr and port");
                     send_str(client, FTP_ERR_PORT);
                 } else {
-                    info(1, "address is %s, port is %ld", inet_ntoa(*(struct in_addr*)&port_address), port_port);
+                    info(1, "address is %s, port is %ld", n2a(port_address), port_port);
                     send_str(client, FTP_PORT);
                 }
                 break;
@@ -165,7 +165,32 @@ void handle_session(int client) {
                         }
                     } else {
                         err(1, "no pasv server created");
+                        break;
                     }
+                } else if (trsf_type == TRSF_PORT) {
+                    if (port_address == 0 || port_port == 0) {
+                        err(1, "LIST cmd in PORT mode, address and port not set before");
+                        break;
+                    }
+                    send_str(client, FTP_ASCII);
+                    info(1, "LIST cmd in PORT mode, try connecting %s %lu", n2a(port_address), port_port);
+                    data_client = new_client(port_address, port_port);
+                    info(1, "R");
+                    if (data_client < 0) {
+                        err(1, "port mode connect client data sock error");
+                        break;
+                    }
+                } else {
+                    err(1, "transfer type no specified");
+                }
+                if (data_client >= 0) {
+                    getcwd(cwd, sizeof(cwd));
+                    sprintf(cmdbuf, "ls -l %s", cwd);
+                    FILE *p = popen(cmdbuf, "r");
+                    send_file(data_client, p);
+                    pclose(p);
+                } else {
+                    err(1, "no data client created");
                 }
                 break;
         }
