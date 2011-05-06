@@ -86,7 +86,7 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define FTP_HELP W("Help msg", RPL_OK)
 #define FTP_NAMEOK W("User name okay need password", RPL_NAMEOK)
 #define FTP_LOGIN W("User logged in proceed", RPL_LOGIN)
-#define FTP_PWD W("\"%s\" is cwd", RPL_PWD)
+#define FTP_PWD W("\"%s\"", RPL_PWD)
 #define FTP_SYST W("UNIX", RPL_SYST)
 #define FTP_CTYPE W("data type changed to %c", RPL_OK)
 #define FTP_ERR_DATATYPE W("error type change cmd, current data type is %c", RPL_ERR_UNKWNCMD)

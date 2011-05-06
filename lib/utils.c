@@ -180,6 +180,7 @@ char * parse_path(const char *buf) {
     int i, j;
     for (i=0; buf[i]!=' ' && i < BUF_SIZE; i++);
     if (i == BUF_SIZE) return NULL;
+    i++;
     for (j=i; buf[j]!='\r' && buf[j]!= '\n' && j < BUF_SIZE; j++);
     memcpy(path, &buf[i], j-i);
     path[j-i] = 0;

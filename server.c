@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <errno.h>
 
 #include "vars.h"
 #include "zlog.h"
@@ -197,6 +198,7 @@ void handle_session(int client) {
                     sprintf(cmdbuf, "ls -l %s", cwd);
                     FILE *p1 = popen(cmdbuf, "r");
                     send_file(data_client, p1);
+                    send_str(client, FTP_TRSF_OK);
                     pclose(p1);
                     info(1, "LIST , data client closed, status %d", close(data_client));
                     data_client = -1;
@@ -346,9 +348,11 @@ void handle_session(int client) {
                     send_str(1, FTP_ERR_PARAM, "CWD");
                     break;
                 }
+                info(1, "chdir \"%s\"", p);
                 if (!(chdir(p))) {
                     send_str(client, FTP_CWD);
                 } else {
+                    err(1, "errno = %d, errstr is %s", errno, strerror(errno));
                     send_str(client, FTP_ERROR, "change dir failed");
                 }
                 break;
