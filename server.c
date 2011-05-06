@@ -137,7 +137,7 @@ void handle_session(int client) {
                     if (pasv_server >= 0) break;
                 }
                 if (pasv_server < 0) {
-                    err("can not create pasv port for passive mode");
+                    err(1, "can not create pasv port for passive mode");
                     // TODO: send err msg here
                 } else {
                     uint32_t t = svr_addr.sin_addr.s_addr;
@@ -148,7 +148,7 @@ void handle_session(int client) {
                 trsf_type = TRSF_PORT;
                 int _st = parse_addr_port(buf, &port_address, &port_port);
                 if (!_st) {
-                    err("port cmd error parsing addr and port");
+                    err(1, "port cmd error parsing addr and port");
                     send_str(client, FTP_ERR_PORT);
                 } else {
                     info(1, "address is %s, port is %ld", inet_ntoa(*(struct in_addr*)&port_address), port_port);
@@ -201,17 +201,17 @@ int main(int argc, char *argv[]){
 
         if (!running) break;
         if (client < 0) {
-            err("accept client error: %d", client);
+            err(0, "accept client error: %d", client);
             exit(2);
         }
-        info("client connected: %s", inet_ntoa(client_addr.sin_addr));
+        info(0, "client connected: %s", inet_ntoa(client_addr.sin_addr));
 
         forkpid = fork();
         if (forkpid == -1) {
-            err("fork server error");
+            err(0, "fork server error");
         } else if (forkpid == 0) {      // child
             server = -1;        // avoid killing server on Ctrl-C
-            info("new ftp session");
+            info(0, "new ftp session");
             handle_session(client);
             exit(0);
         } else if (forkpid > 0) {       // myself
@@ -219,7 +219,7 @@ int main(int argc, char *argv[]){
         }
     }
     
-    info("exit ftpd");
+    info(0, "exit ftpd");
     return 0;
 }
 
