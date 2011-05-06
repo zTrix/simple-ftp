@@ -87,7 +87,7 @@ void handle_session(int client) {
         enum FTP_CMD cmd = parse_cmd(buf, n);
         if (cmd < 0) {
             buf[n-2] = 0;
-            info("[ SESSION %d ]: unknown cmd: %s", getpid(), buf);
+            err("[ SESSION %d ]: unknown cmd: %s", getpid(), buf);
             continue;
         }
         info("[ SESSION %d ]: cmd: %s, %d", getpid(), FTP_CMD_LIST[cmd].name, cmd);
