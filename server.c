@@ -27,12 +27,12 @@ void ouch(int n) {
     if (forkpid > 0) {      // ftpd
         if (server >= 0) {
             int st = close(server);
-            info("[ DAEMON  %d ]: shutdown ftp ... %d", getpid(), st);
+            info(0, "shutdown ftp ... %d", st);
         }
     } else {                // session
         if (client >= 0) {
             int st = close(client);
-            info("[ SESSION %d ]: shutdown ftp session... %d", getpid(), st);
+            info(1, "shutdown ftp session... %d", st);
         }
     }
     exit(0);
@@ -56,30 +56,32 @@ enum FTP_CMD parse_cmd(char *buf, int len) {
  */
 void handle_session(int client) {
     send_str(client, FTP_RDY);
-    int i, n;
+    int i, n, retry;
     char cwd[BUF_SIZE] = {0};
     enum DATA_TYPE datatype = TYPE_IMAGE;
     srand(time(0));
     uint32_t pasv_port;
     enum TRSF_TYPE trsf_type;
     int pasv_server = -1;
-    int data_client = -1;
     struct sockaddr_in svr_addr;
     int svr_addr_len = sizeof(svr_addr);
     getsockname(client, (struct sockaddr*)&svr_addr, &svr_addr_len);
     uint32_t svr_host_addr = ntohl(svr_addr.sin_addr.s_addr);
     uint32_t port_address;
     uint16_t port_port;
+    int data_client = -1;
+    struct sockaddr_in data_client_addr;
+    int data_client_len = sizeof(data_client_addr);
 
     while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
         if (!running) break;
         buf[n] = '\0';
-        //info("[ SESSION %d ]: recved %d bytes: %s", getpid(), n, buf);
+        //info(1, "recved %d bytes: %s", n, buf);
         for (i=0; i<n; i++) {
             if (buf[i] == '\n') break;
         }
         if (buf[i] != '\n') {
-            err("[ SESSION %d ]: no line break found", getpid());
+            err(1, "no line break found");
             break;
         }
         n = recv(client, buf, i+1, 0);
@@ -87,10 +89,10 @@ void handle_session(int client) {
         enum FTP_CMD cmd = parse_cmd(buf, n);
         if (cmd < 0) {
             buf[n-2] = 0;
-            err("[ SESSION %d ]: unknown cmd: %s", getpid(), buf);
+            err(1, "unknown cmd: %s", buf);
             continue;
         }
-        info("[ SESSION %d ]: cmd: %s, %d", getpid(), FTP_CMD_LIST[cmd].name, cmd);
+        info(1, "cmd: %s, %d", FTP_CMD_LIST[cmd].name, cmd);
         switch(cmd) {
             case NOOP:
                 send_str(client, FTP_OK);
@@ -127,32 +129,51 @@ void handle_session(int client) {
                 }
                 break;
             case PASV:
-                while (1) { // in case of create server error, port used
+                retry = 100;
+                while (retry--) { // in case of create server error, port used
                     pasv_port = (rand() % 64512 + 1024);
                     trsf_type = TRSF_PASV;
                     pasv_server = new_server(INADDR_ANY, pasv_port, 1);
                     if (pasv_server >= 0) break;
                 }
-                uint32_t t = svr_addr.sin_addr.s_addr;
-                send_str(client, FTP_PASV, t&0xff, (t>>8)&0xff, (t>>16)&0xff, (t>>24)&0xff, pasv_port>>8, pasv_port & 0xff);
+                if (pasv_server < 0) {
+                    err("can not create pasv port for passive mode");
+                    // TODO: send err msg here
+                } else {
+                    uint32_t t = svr_addr.sin_addr.s_addr;
+                    send_str(client, FTP_PASV, t&0xff, (t>>8)&0xff, (t>>16)&0xff, (t>>24)&0xff, pasv_port>>8, pasv_port & 0xff);
+                }
                 break;
             case PORT:
                 trsf_type = TRSF_PORT;
                 int _st = parse_addr_port(buf, &port_address, &port_port);
                 if (!_st) {
-                    err("[ SESSION %d ]: port cmd error parsing addr and port", getpid());
+                    err("port cmd error parsing addr and port");
                     send_str(client, FTP_ERR_PORT);
                 } else {
-                    info("[ SESSION %d ]: address is %s, port is %ld", getpid(), inet_ntoa(*(struct in_addr*)&port_address), port_port);
+                    info(1, "address is %s, port is %ld", inet_ntoa(*(struct in_addr*)&port_address), port_port);
                     send_str(client, FTP_PORT);
+                }
+                break;
+            case LIST:
+                if (trsf_type == TRSF_PASV) {
+                    if (pasv_port > 1024 && pasv_port <= 65535 && pasv_server >= 0) {
+                        send_str(client, FTP_ASCII);
+                        data_client = accept(pasv_server, (struct sockaddr *)&data_client_addr, &data_client_len);
+                        if (data_client < 0) {
+                            err(1, "accept data client socket error");
+                        }
+                    } else {
+                        err(1, "no pasv server created");
+                    }
                 }
                 break;
         }
         if (!running) break;
     }
-    info("[ SESSION %d ]: exit session", getpid());
+    info(1, "exit session");
     int st = close(client);
-    info("[ SESSION %d ]: closed , status %d", getpid(), st);
+    info(1, "closed , status %d", st);
 }
 
 int main(int argc, char *argv[]){
@@ -167,7 +188,7 @@ int main(int argc, char *argv[]){
 
     server = new_server(LISTEN_ADDR, port, MAX_CONNECTIONS);
     if (server < 0) {
-        err("[ DAEMON  %d ] can not create server, return code is %d, socket already in use", getpid(), server);
+        err(0, "can not create server, return code is %d, socket already in use", server);
         exit(1);
     }
 

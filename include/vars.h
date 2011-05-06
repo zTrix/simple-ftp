@@ -93,6 +93,7 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define FTP_PASV W("Enter passive mode (%d,%d,%d,%d,%d,%d)", RPL_PASVOK)
 #define FTP_PORT W("PORT command success", RPL_OK)
 #define FTP_ERR_PORT W("port command failed, parameter error", RPL_ERR_PARM)
+#define FTP_ASCII W("Opening ASCII mode data connection for cmd LIST", RPL_FILERDY)
 
 enum DATA_TYPE {
     TYPE_ASCII,
