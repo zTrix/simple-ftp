@@ -119,6 +119,7 @@ int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port) {
                 } else {
                     break;
                 }
+                f = -1;
             }
         } else {
             if (f < 0) {

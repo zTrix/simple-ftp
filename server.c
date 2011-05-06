@@ -139,12 +139,11 @@ void handle_session(int client) {
             case PORT:
                 trsf_type = TRSF_PORT;
                 int _st = parse_addr_port(buf, &port_address, &port_port);
-                info("R");
                 if (!_st) {
                     err("[ SESSION %d ]: port cmd error parsing addr and port", getpid());
                     send_str(client, FTP_ERR_PORT);
                 } else {
-                    info("[ SESSION %d ]: address is %d, port is %d", port_address, port_port);
+                    info("[ SESSION %d ]: address is %s, port is %ld", getpid(), inet_ntoa(*(struct in_addr*)&port_address), port_port);
                     send_str(client, FTP_PORT);
                 }
                 break;
