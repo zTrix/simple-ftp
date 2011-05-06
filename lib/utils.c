@@ -108,6 +108,29 @@ int recv_path(int peer, char *file, uint32_t offset) {
     return st < 0 ? st : cl;
 }
 
+int parse_number(const char *buf, uint32_t *number) {
+    int f = -1, i;
+    char tmp[BUF_SIZE] = {0};
+    int ret = -1;
+    for (i=0; buf[i]!=0 && i<BUF_SIZE; i++) {
+        if (!isdigit(buf[i])) {
+            if (f >= 0) {
+                memcpy(tmp, &buf[f], i-f);
+                tmp[i-f] = 0;
+                *number = atoi(tmp);
+                ret = 0;
+                f = -1;
+                break;
+            }
+        } else {
+            if (f < 0) {
+                f = i;
+            }
+        }
+    }
+    return ret;
+}
+
 int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port) {
     int i;
     *addr = *port = 0;
@@ -115,9 +138,9 @@ int parse_addr_port(const char *buf, uint32_t *addr, uint16_t *port) {
     char tmp[BUF_SIZE] = {0};
     int cnt = 0;
     int portcnt = 0;
-    for(i=0; buf[i]!=0; i++) {
+    for(i=0; buf[i]!=0 && i<BUF_SIZE; i++) {
         if(!isdigit(buf[i])) {
-            if (f>0) {
+            if (f >= 0) {
                 memcpy(tmp, &buf[f], i-f);
                 tmp[i-f] = 0;
                 if (cnt < 4) {

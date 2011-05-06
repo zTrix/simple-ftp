@@ -94,6 +94,8 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define FTP_PORT W("PORT command success", RPL_OK)
 #define FTP_ERR_PORT W("port command failed, parameter error", RPL_ERR_PARM)
 #define FTP_ASCII W("Opening ASCII mode data connection for cmd LIST", RPL_FILERDY)
+#define FTP_REST W("restart at %d. use STORE or RETR to begin transfer", RPL_RESTOK)
+#define FTP_ERR_PARAM W("cmd %s: wrong param", RPL_ERR_PARM)
 
 enum DATA_TYPE {
     TYPE_ASCII,

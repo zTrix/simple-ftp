@@ -72,6 +72,7 @@ void handle_session(int client) {
     int data_client = -1;
     struct sockaddr_in data_client_addr;
     int data_client_len = sizeof(data_client_addr);
+    uint32_t restdata = 0;
 
     while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
         if (!running) break;
@@ -199,6 +200,14 @@ void handle_session(int client) {
                 if (pasv_server >= 0) {
                     info(1, "LIST cmd, closing passive server ... %d", close(pasv_server));
                     pasv_server = -1;
+                }
+                break;
+            case REST:
+                if (parse_number(buf, &restdata) == 0) {
+                    send_str(client, FTP_REST, restdata);
+                } else {
+                    err(1, "rest command error, wrong param");
+                    send_str(client, FTP_ERR_PARAM, "REST");
                 }
                 break;
         }
