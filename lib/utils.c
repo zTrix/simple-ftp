@@ -1,6 +1,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <errno.h>
 #include <string.h>
 
 #include "vars.h"
@@ -38,7 +39,8 @@ int new_client(uint32_t srv_addr, unsigned short port) {
     if (client < 0) return -2;
     struct sockaddr server = new_addr(srv_addr, port);
     int st = connect(client, &server, sizeof(server));
-    return st;
+    if (st < 0) return -1;
+    return client;
 }
 
 int send_str(int peer, const char* fmt, ...) {
@@ -51,12 +53,20 @@ int send_str(int peer, const char* fmt, ...) {
 }
 
 int send_file(int peer, FILE *f) {
-    char filebuf[BUF_SIZE];
-    int n;
+    char filebuf[BUF_SIZE+1];
+    int n, ret = 0;
     while ((n=fread(filebuf, 1, BUF_SIZE, f)) > 0) {
-        send(peer, filebuf, n, 0);
+        int st = send(peer, filebuf, n, 0);
+        if (st < 0) {
+            err(1, "send file error, errno = %d, %s", errno, strerror(errno));
+            ret = -1;
+            break;
+        } else {
+            filebuf[n] = 0;
+            info(1, " %d bytes sent", st);
+        }
     }
-    return 0;
+    return ret;
 }
 
 int send_path(int peer, char *file, uint32_t offset) {

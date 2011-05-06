@@ -178,6 +178,8 @@ void handle_session(int client) {
                     if (data_client < 0) {
                         err(1, "port mode connect client data sock error");
                         break;
+                    } else {
+                        info(1, "LIST cmd in PORT mode, %s %lu connected", n2a(port_address), port_port);
                     }
                 } else {
                     err(1, "transfer type no specified");
@@ -195,9 +197,13 @@ void handle_session(int client) {
         }
         if (!running) break;
     }
-    info(1, "exit session");
+    info(1, "exiting session ...");
     int st = close(client);
-    info(1, "closed , status %d", st);
+    info(1, "clent closed , status %d", st);
+    if (data_client >= 0) {
+        st = close(data_client);
+        info(1, "data client closed, status %d", st);
+    }
 }
 
 int main(int argc, char *argv[]){
