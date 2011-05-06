@@ -140,6 +140,7 @@ void handle_session(int client) {
                     err(1, "can not create pasv port for passive mode");
                     // TODO: send err msg here
                 } else {
+                    info(1, "PASV server created, port : %hu", pasv_port);
                     uint32_t t = svr_addr.sin_addr.s_addr;
                     send_str(client, FTP_PASV, t&0xff, (t>>8)&0xff, (t>>16)&0xff, (t>>24)&0xff, pasv_port>>8, pasv_port & 0xff);
                 }
@@ -190,8 +191,14 @@ void handle_session(int client) {
                     FILE *p = popen(cmdbuf, "r");
                     send_file(data_client, p);
                     pclose(p);
+                    info(1, "data client closed, status %d", close(data_client));
+                    data_client = -1;
                 } else {
                     err(1, "no data client created");
+                }
+                if (pasv_server >= 0) {
+                    info(1, "LIST cmd, closing passive server ... %d", close(pasv_server));
+                    pasv_server = -1;
                 }
                 break;
         }
@@ -200,9 +207,12 @@ void handle_session(int client) {
     info(1, "exiting session ...");
     int st = close(client);
     info(1, "clent closed , status %d", st);
-    if (data_client >= 0) {
-        st = close(data_client);
-        info(1, "data client closed, status %d", st);
+    client = -1;
+    if (data_client > 0) {
+        info(1, "data client closed, status %d", close(data_client));
+    }
+    if (pasv_server > 0) {
+        info(1, "pasv server closed, status %d", close(pasv_server));
     }
 }
 
