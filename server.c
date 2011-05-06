@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+#include <time.h>
 
 #include "vars.h"
 #include "zlog.h"
@@ -73,6 +75,10 @@ void handle_session(int client) {
     struct sockaddr_in data_client_addr;
     int data_client_len = sizeof(data_client_addr);
     uint32_t restdata = 0;
+    char rnfr[BUF_SIZE];
+    char *p;            // tmp file path
+    struct stat file_stat;      // file stat for time and size
+    struct tm mdtime;
 
     while ((n=recv(client, buf, BUF_SIZE, MSG_PEEK)) > 0) {
         if (!running) break;
@@ -189,9 +195,9 @@ void handle_session(int client) {
                 if (data_client >= 0) {
                     getcwd(cwd, sizeof(cwd));
                     sprintf(cmdbuf, "ls -l %s", cwd);
-                    FILE *p = popen(cmdbuf, "r");
-                    send_file(data_client, p);
-                    pclose(p);
+                    FILE *p1 = popen(cmdbuf, "r");
+                    send_file(data_client, p1);
+                    pclose(p1);
                     info(1, "LIST , data client closed, status %d", close(data_client));
                     data_client = -1;
                 } else {
@@ -245,7 +251,7 @@ void handle_session(int client) {
                     err(1, "RETR: transfer type no specified");
                     break;
                 }
-                char * p = parse_path(buf);
+                p = parse_path(buf);
                 if (!p) {
                     err(1, "RETR, wrong param");
                     send_str(1, FTP_ERR_PARAM, "RETR");
@@ -303,7 +309,7 @@ void handle_session(int client) {
                     err(1, "STOR: transfer type no specified");
                     break;
                 }
-                char * p = parse_path(buf);
+                p = parse_path(buf);
                 if (!p) {
                     err(1, "STOR, wrong param");
                     send_str(1, FTP_ERR_PARAM, "RETR");
@@ -334,7 +340,7 @@ void handle_session(int client) {
                 }
                 break;
             case CWD:
-                char *p = parse_path(buf);
+                p = parse_path(buf);
                 if (!p) {
                     err(1, "CWD, wrong param");
                     send_str(1, FTP_ERR_PARAM, "CWD");
@@ -345,6 +351,96 @@ void handle_session(int client) {
                 } else {
                     send_str(client, FTP_ERROR, "change dir failed");
                 }
+                break;
+            case MDTM:
+            case SIZE:
+                p = parse_path(buf);
+                if (!p) {
+                    if (cmd == MDTM) {
+                        err(1, "MDTM, wrong param");
+                        send_str(client, FTP_ERR_PARAM, "MDTM");
+                    } else {
+                        err(1, "SIZE, wrong param");
+                        send_str(client, FTP_ERR_PARAM, "SIZE");
+                    }
+                    break;
+                } 
+                if (stat(p, &file_stat) == 0) {
+                    if (cmd == MDTM) {
+                        char _buf[BUF_SIZE];
+                        gmtime_r(&(file_stat.st_mtime), &mdtime);
+                        strftime(_buf, sizeof(_buf), "%Y%m%d%H%M%S", &mdtime);
+                        send_str(client, FTP_MDTM, _buf);
+                    } else {
+                        send_str(client, FTP_SIZE, file_stat.st_size);
+                    }
+                }
+                break;
+            case DELE:
+                p = parse_path(buf);
+                if (!p) {
+                    err(1, "DELE, param error");
+                    send_str(client, FTP_ERR_PARAM, "DELE");
+                } else {
+                    if (remove(p) == 0) {
+                        send_str(client, FTP_DELE);
+                    } else {
+                        send_str(client, FTP_ERROR, "delete failed, file not exist ?");
+                    }
+                }
+                break;
+            case RMD:
+                p = parse_path(buf);
+                if (!p) {
+                    err(1, "RMD, param error");
+                    send_str(client, FTP_ERR_PARAM, "RMD");
+                } else {
+                    if (rmdir(p) == 0) {
+                        send_str(client, FTP_DELE);
+                    } else {
+                        send_str(client, FTP_ERROR, "rmdir failed, dir not exist ?");
+                    }
+                }
+                break;
+            case MKD:
+                p = parse_path(buf);
+                if (!p) {
+                    err(1, "MKD, param error");
+                    send_str(client, FTP_ERR_PARAM, "MKD");
+                } else {
+                    if (mkdir(p, 0777) == 0) {
+                        send_str(client, FTP_MKDIR);
+                    } else {
+                        send_str(client, FTP_ERROR, "mkdir failed, dir already exist ?");
+                    }
+                }
+                break;
+            case RNFR:
+                p = parse_path(buf);
+                if (!p) {
+                    err(1, "RNFR param error");
+                    send_str(client, FTP_ERR_PARAM, "RNFR");
+                } else {
+                    strcpy(rnfr, p);
+                    send_str(client, FTP_RNFR);
+                }
+                break;
+            case RNTO:
+                p = parse_path(buf);
+                if (!p) {
+                    err(1, "RNTO param error");
+                    send_str(client, FTP_ERR_PARAM, "RNTO");
+                } else {
+                    if (rename(rnfr, p) == 0) {
+                        send_str(client, FTP_RNTO);
+                    } else {
+                        send_str(client, FTP_ERROR, "rnto error, please check param");
+                    }
+                }
+                break;
+            default:
+                send_str(client, FTP_CMDNOIM);
+                break;
         }
         if (!running) break;
     }

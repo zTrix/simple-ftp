@@ -77,7 +77,7 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define RPL_ERR_IGN 202
 #define RPL_ERR_NOTIMPL 502
 #define RPL_BADSEQ 503
-#define RPL_ERRNOTIMPLPARM 504
+#define RPL_CMDNOIM 504
 
 #define W(s,d) "%d "s" \r\n",d
 #define FTP_OK W("OK",RPL_OK)
@@ -101,6 +101,13 @@ extern struct ftp_cmd FTP_CMD_LIST[FTP_CMD_COUNT];
 #define FTP_ERROR W("FTP error: %s ", RPL_ERR_UNKWNCMD)
 #define FTP_CDUP W("changd to parent directory success", RPL_CDUP)
 #define FTP_CWD W("dir changed", RPL_CWD)
+#define FTP_MDTM W("%s", RPL_FILEST)
+#define FTP_SIZE W("%d", RPL_FILEST)
+#define FTP_DELE W("Delete success", RPL_DELE)
+#define FTP_MKDIR W("mkdir success", RPL_MKDIR)
+#define FTP_RNFR W("RNFR success, waiting RNT", RPL_RNFR)
+#define FTP_RNTO W("RNTO success", RPL_RNTO)
+#define FTP_CMDNOIM W("command not implemented", RPL_CMDNOIM)
 
 enum DATA_TYPE {
     TYPE_ASCII,
