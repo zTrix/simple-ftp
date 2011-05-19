@@ -3,16 +3,22 @@ CC:=gcc
 CCFLAGS:=-Iinclude
 BIN:=bin
 
-all: client
+all: client ftpd print_server
 
-ftpd:server.c lib/utils.c lib/zlog.c lib/vars.c
-	${CC} ${CCFLAGS} -o./${BIN}/$@ $^ && ./${BIN}/$@
+libs:=lib/utils.c lib/zlog.c lib/vars.c
 
-client:client.c lib/utils.c lib/zlog.c lib/vars.c
-	${CC} ${CCFLAGS} -o./${BIN}/$@ $^ && ./${BIN}/$@ 127.0.0.1
+ftpd:server.c ${libs} $(BIN)
+	${CC} ${CCFLAGS} -o./${BIN}/$@ server.c ${libs}
 
-print_server:test/print_server.c lib/utils.c
-	${CC} ${CCFLAGS} -o./${BIN}/$@ $^
+client:client.c ${libs} $(BIN)
+	${CC} ${CCFLAGS} -o./${BIN}/$@ client.c ${libs}
+
+print_server:test/print_server.c ${libs} $(BIN)
+	${CC} ${CCFLAGS} -o./${BIN}/$@ test/print_server.c ${libs}
+
+$(BIN):
+	if [ ! -d /tmp/bin ]; then mkdir /tmp/bin; fi
+	ln -s /tmp/bin bin
 
 clean:
 	rm ./${BIN}/*.o
