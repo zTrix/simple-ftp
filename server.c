@@ -81,7 +81,7 @@ void handle_session(int client) {
     int data_client_len = sizeof(data_client_addr);
     uint32_t restdata = 0;
     char rnfr[BUF_SIZE];
-    char *p;            // tmp file path
+    char *p = NULL;            // tmp file path
     struct stat file_stat;      // file stat for time and size
     struct tm mdtime;
 
@@ -523,6 +523,10 @@ void handle_session(int client) {
                     send_str(client, FTP_CMDNOIM);
                     break;
             }
+        }
+        if (p) {
+            free(p);
+            p = NULL;
         }
         if (!running) break;
     }
